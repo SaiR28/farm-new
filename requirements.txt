@@ -1,0 +1,4 @@
+Flask==2.3.2
+pandas==2.0.1
+sqlite3==3.36.0  # If you are using SQLite, this is usually included by default with Python
+pytz==2023.3
