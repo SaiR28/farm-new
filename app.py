@@ -51,14 +51,13 @@ def receive_sensor_data():
     c = conn.cursor()
     c.execute('''
         INSERT INTO sensor_data 
-        (temperature, humidity, pressure, gas_resistance, iaq)
-        VALUES (?, ?, ?, ?, ?)
+        (temperature, humidity, pressure, gas_resistance)
+        VALUES (?, ?, ?, ?)
     ''', (
         data['temperature'],
         data['humidity'],
         data['pressure'],
         data['gas_resistance'],
-        data['iaq']
     ))
     conn.commit()
     conn.close()
