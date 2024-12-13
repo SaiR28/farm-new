@@ -137,38 +137,44 @@ def get_latest_images():
 @app.route('/download/sensor_data')
 def download_sensor_data():
     try:
+        # Create database connection
         conn = sqlite3.connect(DATABASE)
+        
+        # Read data
         data = pd.read_sql_query("SELECT * FROM sensor_data", conn)
         conn.close()
 
-        # Convert timestamps
+        # Convert timestamps and round values
         data['timestamp'] = pd.to_datetime(data['timestamp'])
         data['timestamp'] = data['timestamp'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
         data['timestamp'] = data['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
-
-        # Round numeric columns
+        
         numeric_columns = ['temperature', 'humidity', 'pressure', 'gas_resistance', 'iaq']
         data[numeric_columns] = data[numeric_columns].round(2)
 
-        # Create CSV in memory
-        try:
-            mem_file = io.BytesIO()
-            data.to_csv(mem_file, index=False, encoding='utf-8')
-            mem_file.seek(0)
-            
-            return send_file(
-                mem_file,
-                mimetype='text/csv',
-                as_attachment=True,
-                attachment_filename=f'sensor_data_ist_rounded_{datetime.now(IST).strftime("%Y%m%d_%H%M%S")}.csv'
-            )
-        finally:
-            mem_file.close()
-            
-    except Exception as e:
-        app.logger.error(f"Error generating CSV: {str(e)}")
-        return jsonify({'error': 'Failed to generate CSV file'}), 500
+        # Generate filename
+        filename = f'sensor_data_ist_rounded_{datetime.now(IST).strftime("%Y%m%d_%H%M%S")}.csv'
+        
+        # Create response
+        output = io.StringIO()
+        data.to_csv(output, index=False)
+        response = app.make_response(output.getvalue())
+        output.close()
+        
+        # Set headers
+        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+        response.headers["Content-type"] = "text/csv"
+        
+        return response
 
+    except Exception as e:
+        app.logger.error(f"Error in download_sensor_data: {str(e)}")
+        return jsonify({'error': 'Failed to generate CSV file'}), 500
+    finally:
+        try:
+            conn.close()
+        except:
+            pass
 @app.route('/images/<camera_id>/<filename>')
 def serve_image(camera_id, filename):
     try:
