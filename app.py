@@ -6,7 +6,8 @@ import os
 import zipfile
 import io
 import pytz
-
+from flask import after_this_request
+import traceback
 app = Flask(__name__)
 
 # Configuration
@@ -187,21 +188,76 @@ def serve_image(camera_id, filename):
 
 @app.route('/download/images')
 def download_images():
-    memory_file = io.BytesIO()
-    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for root, dirs, files in os.walk(UPLOAD_FOLDER):
-            for file in files:
-                file_path = os.path.join(root, file)
-                arcname = os.path.relpath(file_path, UPLOAD_FOLDER)
-                zf.write(file_path, arcname)
-    
-    memory_file.seek(0)
-    return send_file(
-        memory_file,
-        mimetype='application/zip',
-        as_attachment=True,
-        download_name='camera_images.zip'
-    )
+    try:
+        # Check if the UPLOAD_FOLDER exists
+        if not os.path.exists(UPLOAD_FOLDER):
+            return jsonify({'error': 'No images directory found'}), 404
+
+        # Create a temporary directory for the zip file
+        temp_dir = os.path.join(os.getcwd(), 'temp')
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
+
+        # Create a unique filename with timestamp
+        timestamp = datetime.now(IST).strftime("%Y%m%d_%H%M%S")
+        zip_filename = f'camera_images_{timestamp}.zip'
+        zip_filepath = os.path.join(temp_dir, zip_filename)
+
+        # Create the zip file on disk instead of in memory
+        files_exist = False
+        with zipfile.ZipFile(zip_filepath, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for root, dirs, files in os.walk(UPLOAD_FOLDER):
+                for file in files:
+                    if file.lower().endswith(tuple(ALLOWED_EXTENSIONS)):
+                        files_exist = True
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, UPLOAD_FOLDER)
+                        try:
+                            zf.write(file_path, arcname)
+                        except Exception as e:
+                            app.logger.error(f"Error adding file {file_path} to zip: {str(e)}")
+                            continue
+
+        if not files_exist:
+            # Clean up the empty zip file if created
+            if os.path.exists(zip_filepath):
+                os.remove(zip_filepath)
+            return jsonify({'error': 'No image files found'}), 404
+
+        # Send the file and delete it after sending
+        @after_this_request
+        def remove_file(response):
+            try:
+                if os.path.exists(zip_filepath):
+                    os.remove(zip_filepath)
+                if os.path.exists(temp_dir) and not os.listdir(temp_dir):
+                    os.rmdir(temp_dir)
+            except Exception as e:
+                app.logger.error(f"Error removing temporary file: {str(e)}")
+            return response
+
+        return send_file(
+            zip_filepath,
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name=zip_filename
+        )
+
+    except Exception as e:
+        # Log the full error traceback
+        app.logger.error(f"Error in download_images: {str(e)}")
+        app.logger.error(traceback.format_exc())
+        
+        # Clean up any temporary files if they exist
+        try:
+            if 'zip_filepath' in locals() and os.path.exists(zip_filepath):
+                os.remove(zip_filepath)
+            if 'temp_dir' in locals() and os.path.exists(temp_dir) and not os.listdir(temp_dir):
+                os.rmdir(temp_dir)
+        except Exception as cleanup_error:
+            app.logger.error(f"Error during cleanup: {str(cleanup_error)}")
+            
+        return jsonify({'error': 'Failed to generate ZIP file'}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
