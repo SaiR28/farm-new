@@ -136,36 +136,38 @@ def get_latest_images():
 
 @app.route('/download/sensor_data')
 def download_sensor_data():
-    conn = sqlite3.connect(DATABASE)
-    data = pd.read_sql_query("SELECT * FROM sensor_data", conn)
-    conn.close()
+    try:
+        conn = sqlite3.connect(DATABASE)
+        data = pd.read_sql_query("SELECT * FROM sensor_data", conn)
+        conn.close()
 
-    # Convert the timestamp column to IST (Indian Standard Time)
-    data['timestamp'] = pd.to_datetime(data['timestamp'])
-    data['timestamp'] = data['timestamp'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
+        # Convert timestamps
+        data['timestamp'] = pd.to_datetime(data['timestamp'])
+        data['timestamp'] = data['timestamp'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')
+        data['timestamp'] = data['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
 
-    # Format the timestamp to string without timezone information (remove +05:30)
-    data['timestamp'] = data['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        # Round numeric columns
+        numeric_columns = ['temperature', 'humidity', 'pressure', 'gas_resistance', 'iaq']
+        data[numeric_columns] = data[numeric_columns].round(2)
 
-    # Round numeric columns to 2 decimal places
-    numeric_columns = ['temperature', 'humidity', 'pressure', 'gas_resistance', 'iaq']
-    data[numeric_columns] = data[numeric_columns].round(2)
-
-    # Create a CSV in memory with IST timestamps and rounded values
-    csv_buffer = io.StringIO()
-    data.to_csv(csv_buffer, index=False)
-    
-    mem_file = io.BytesIO()
-    mem_file.write(csv_buffer.getvalue().encode())
-    mem_file.seek(0)
-    
-    return send_file(
-        mem_file,
-        mimetype='text/csv',
-        as_attachment=True,
-        download_name='sensor_data_ist_rounded.csv'
-    )
-
+        # Create CSV in memory
+        try:
+            mem_file = io.BytesIO()
+            data.to_csv(mem_file, index=False, encoding='utf-8')
+            mem_file.seek(0)
+            
+            return send_file(
+                mem_file,
+                mimetype='text/csv',
+                as_attachment=True,
+                attachment_filename=f'sensor_data_ist_rounded_{datetime.now(IST).strftime("%Y%m%d_%H%M%S")}.csv'
+            )
+        finally:
+            mem_file.close()
+            
+    except Exception as e:
+        app.logger.error(f"Error generating CSV: {str(e)}")
+        return jsonify({'error': 'Failed to generate CSV file'}), 500
 
 @app.route('/images/<camera_id>/<filename>')
 def serve_image(camera_id, filename):
