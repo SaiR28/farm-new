@@ -200,7 +200,7 @@ def download_images():
 
         # Create a unique filename with timestamp
         timestamp = datetime.now(IST).strftime("%Y%m%d_%H%M%S")
-        zip_filename = f'camera_images_{timestamp}.zip'
+        zip_filename = f'camera_images_.zip'
         zip_filepath = os.path.join(temp_dir, zip_filename)
 
         # Create the zip file on disk instead of in memory
