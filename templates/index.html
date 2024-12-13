@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Kissan Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e8449, #27ae60);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .datetime {
+            font-size: 1.2em;
+            color: #e8f6e9;
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .sensor-card {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .sensor-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 10px 0;
+        }
+
+        .label {
+            color: #27ae60;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .timestamp {
+            color: #95a5a6;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .last-received {
+            color: #e67e22;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .camera-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .camera-card {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .camera-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .camera-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .camera-image {
+            width: 100%;
+            height: 300px;
+            border-radius: 5px;
+            margin-top: 10px;
+            object-fit: cover;
+            background-color: #f8f9fa;
+            transition: opacity 0.3s ease;
+        }
+
+        .camera-image.loading {
+            opacity: 0.5;
+        }
+
+        .image-container {
+            position: relative;
+            min-height: 300px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .image-error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #6c757d;
+        }
+
+        .download-section {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+
+        .download-btn {
+            background-color: #27ae60;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+
+        .download-btn:hover {
+            background-color: #219a52;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .no-data {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .datetime {
+                font-size: 1em;
+            }
+            
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Neural Kissan Dashboard</h1>
+        <div class="datetime" id="current-datetime"></div>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="sensor-card">
+            <div class="label">Temperature</div>
+            <div class="value" id="temperature">--</div>
+            <div class="timestamp" id="temp-timestamp">Last updated: --</div>
+            <div class="last-received" id="temp-received">Last received: --</div>
+        </div>
+        <div class="sensor-card">
+            <div class="label">Humidity</div>
+            <div class="value" id="humidity">--</div>
+            <div class="timestamp" id="humid-timestamp">Last updated: --</div>
+            <div class="last-received" id="humid-received">Last received: --</div>
+        </div>
+        <div class="sensor-card">
+            <div class="label">Pressure</div>
+            <div class="value" id="pressure">--</div>
+            <div class="timestamp" id="pressure-timestamp">Last updated: --</div>
+            <div class="last-received" id="pressure-received">Last received: --</div>
+        </div>
+        <div class="sensor-card">
+            <div class="label">Gas Resistance</div>
+            <div class="value" id="gas">--</div>
+            <div class="timestamp" id="gas-timestamp">Last updated: --</div>
+            <div class="last-received" id="gas-received">Last received: --</div>
+        </div>
+        <div class="sensor-card">
+            <div class="label">IAQ</div>
+            <div class="value" id="iaq">--</div>
+            <div class="timestamp" id="iaq-timestamp">Last updated: --</div>
+            <div class="last-received" id="iaq-received">Last received: --</div>
+        </div>
+    </div>
+
+    <div class="download-section">
+        <button class="download-btn" onclick="downloadSensorData()">Download Sensor Data (CSV)</button>
+        <button class="download-btn" onclick="downloadImages()">Download All Images (ZIP)</button>
+    </div>
+
+    <div id="camera-section" class="camera-section">
+        <!-- Camera images will be dynamically added here -->
+    </div>
+
+    <script>
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('current-datetime').textContent = now.toLocaleString();
+        }
+
+        let lastReceivedTimes = {};
+
+        function updateSensorData() {
+            fetch('/api/latest_sensor_data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error(data.error);
+                        return;
+                    }
+                    
+                    const now = new Date();
+                    const dataTime = new Date(data.timestamp);
+                    const timeDiff = Math.floor((now - dataTime) / 1000); // difference in seconds
+                    
+                    document.getElementById('temperature').textContent = `${data.temperature.toFixed(1)}°C`;
+                    document.getElementById('humidity').textContent = `${data.humidity.toFixed(1)}%`;
+                    document.getElementById('pressure').textContent = `${data.pressure.toFixed(1)} hPa`;
+                    document.getElementById('gas').textContent = `${data.gas_resistance.toFixed(1)} kΩ`;
+                    document.getElementById('iaq').textContent = data.iaq.toFixed(1);
+
+                    const timestamp = dataTime.toLocaleString();
+                    ['temp', 'humid', 'pressure', 'gas', 'iaq'].forEach(sensor => {
+                        document.getElementById(`${sensor}-timestamp`).textContent = `Last updated: ${timestamp}`;
+                        
+                        // Update last received time if data is newer
+                        if (!lastReceivedTimes[sensor] || dataTime > lastReceivedTimes[sensor]) {
+                            lastReceivedTimes[sensor] = dataTime;
+                        }
+                        
+                        const receivedElement = document.getElementById(`${sensor}-received`);
+                        const receivedDiff = Math.floor((now - lastReceivedTimes[sensor]) / 1000);
+                        receivedElement.textContent = `Last received: ${formatTimeDiff(receivedDiff)}`;
+                        
+                        // Add visual indicator if data is stale
+                        if (receivedDiff > 300) { // 5 minutes
+                            receivedElement.style.color = '#e74c3c';
+                        } else {
+                            receivedElement.style.color = '#e67e22';
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching sensor data:', error));
+        }
+
+        function formatTimeDiff(seconds) {
+            if (seconds < 60) return `${seconds} seconds ago`;
+            if (seconds < 3600) return `${Math.floor(seconds/60)} minutes ago`;
+            if (seconds < 86400) return `${Math.floor(seconds/3600)} hours ago`;
+            return `${Math.floor(seconds/86400)} days ago`;
+        }
+
+        function updateCameraImages() {
+            fetch('/api/latest_images')
+                .then(response => response.json())
+                .then(data => {
+                    const cameraSection = document.getElementById('camera-section');
+                    cameraSection.innerHTML = '';
+                    
+                    if (Object.keys(data).length === 0) {
+                        cameraSection.innerHTML = '<div class="no-data">No camera data available</div>';
+                        return;
+                    }
+                    
+                    for (const [camera, imageData] of Object.entries(data)) {
+                        const card = document.createElement('div');
+                        card.className = 'camera-card';
+                        
+                        const imageTimestamp = new Date(imageData.timestamp);
+                        const timeDiff = Math.floor((new Date() - imageTimestamp) / 1000);
+                        
+                        card.innerHTML = `
+                            <div class="camera-info">
+                                <div class="label">${camera.replace('camera_', 'Camera ')}</div>
+                                <div class="last-received" style="color: ${timeDiff > 300 ? '#e74c3c' : '#e67e22'}">
+                                    ${formatTimeDiff(timeDiff)}
+                                </div>
+                            </div>
+                            <img src="${imageData.url}" 
+                                 class="camera-image" 
+                                 alt="${camera}"
+                                 loading="lazy"
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100%25\' height=\'100%25\'%3E%3Crect width=\'100%25\' height=\'100%25\' fill=\'%23f0f0f0\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'Arial\' font-size=\'14\' fill=\'%23999\'>Image Not Available</text%3E%3C/svg%3E'">
+                            <div class="timestamp">Last updated: ${imageTimestamp.toLocaleString()}</div>
+                        `;
+                        cameraSection.appendChild(card);
+                    }
+                })
+                .catch(error => console.error('Error fetching camera images:', error));
+        }
+
+        function downloadSensorData() {
+            window.location.href = '/download/sensor_data';
+        }
+
+        function downloadImages() {
+            window.location.href = '/download/images';
+        }
+
+        function handleImageError(img) {
+            img.style.display = 'none';
+            const errorDiv = img.parentNode.querySelector('.image-error');
+            errorDiv.style.display = 'block';
+        }
+
+        // Update everything immediately and then every 5 seconds
+        updateDateTime();
+        updateSensorData();
+        updateCameraImages();
+
+        setInterval(updateDateTime, 1000);
+        setInterval(updateSensorData, 5000);
+        setInterval(updateCameraImages, 5000);
+    </script>
+</body>
+</html>
