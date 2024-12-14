@@ -189,42 +189,83 @@ def serve_image(camera_id, filename):
 @app.route('/download/images')
 def download_images():
     try:
-        # Check if the UPLOAD_FOLDER exists
+        # Check if the UPLOAD_FOLDER exists and has camera directories
         if not os.path.exists(UPLOAD_FOLDER):
+            app.logger.error(f"Upload folder {UPLOAD_FOLDER} does not exist")
             return jsonify({'error': 'No images directory found'}), 404
+            
+        # Check for camera directories
+        camera_dirs = [d for d in os.listdir(UPLOAD_FOLDER) if d.startswith('camera_')]
+        if not camera_dirs:
+            app.logger.error("No camera directories found in upload folder")
+            return jsonify({'error': 'No camera directories found'}), 404
 
-        # Create a temporary directory for the zip file
+        # Create a temporary directory with error handling
         temp_dir = os.path.join(os.getcwd(), 'temp')
-        if not os.path.exists(temp_dir):
-            os.makedirs(temp_dir)
+        try:
+            if not os.path.exists(temp_dir):
+                os.makedirs(temp_dir, exist_ok=True)
+        except Exception as e:
+            app.logger.error(f"Failed to create temp directory: {str(e)}")
+            return jsonify({'error': 'Failed to create temporary directory'}), 500
 
-        # Create a unique filename with timestamp
+        # Create zip filename with timestamp
         timestamp = datetime.now(IST).strftime("%Y%m%d_%H%M%S")
-        zip_filename = f'camera_images_.zip'
+        zip_filename = f'camera_images_{timestamp}.zip'
         zip_filepath = os.path.join(temp_dir, zip_filename)
 
-        # Create the zip file on disk instead of in memory
         files_exist = False
-        with zipfile.ZipFile(zip_filepath, 'w', zipfile.ZIP_DEFLATED) as zf:
-            for root, dirs, files in os.walk(UPLOAD_FOLDER):
-                for file in files:
-                    if file.lower().endswith(tuple(ALLOWED_EXTENSIONS)):
-                        files_exist = True
-                        file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, UPLOAD_FOLDER)
-                        try:
-                            zf.write(file_path, arcname)
-                        except Exception as e:
-                            app.logger.error(f"Error adding file {file_path} to zip: {str(e)}")
-                            continue
-
-        if not files_exist:
-            # Clean up the empty zip file if created
+        file_count = 0
+        
+        try:
+            with zipfile.ZipFile(zip_filepath, 'w', zipfile.ZIP_DEFLATED) as zf:
+                for camera_dir in camera_dirs:
+                    camera_path = os.path.join(UPLOAD_FOLDER, camera_dir)
+                    if not os.path.isdir(camera_path):
+                        continue
+                        
+                    for file in os.listdir(camera_path):
+                        if file.lower().endswith(tuple(ALLOWED_EXTENSIONS)):
+                            file_path = os.path.join(camera_path, file)
+                            if not os.path.exists(file_path):
+                                app.logger.warning(f"File {file_path} does not exist")
+                                continue
+                                
+                            try:
+                                # Check if file is readable
+                                if not os.access(file_path, os.R_OK):
+                                    app.logger.error(f"File {file_path} is not readable")
+                                    continue
+                                    
+                                # Check file size
+                                if os.path.getsize(file_path) == 0:
+                                    app.logger.warning(f"File {file_path} is empty")
+                                    continue
+                                    
+                                arcname = os.path.join(camera_dir, file)
+                                zf.write(file_path, arcname)
+                                files_exist = True
+                                file_count += 1
+                                
+                            except Exception as e:
+                                app.logger.error(f"Error adding file {file_path} to zip: {str(e)}")
+                                continue
+        
+        except Exception as zip_error:
+            app.logger.error(f"Error creating zip file: {str(zip_error)}")
+            # Clean up the zip file if it exists
             if os.path.exists(zip_filepath):
                 os.remove(zip_filepath)
-            return jsonify({'error': 'No image files found'}), 404
+            return jsonify({'error': 'Failed to create ZIP file'}), 500
 
-        # Send the file and delete it after sending
+        if not files_exist:
+            app.logger.error("No valid image files found to zip")
+            if os.path.exists(zip_filepath):
+                os.remove(zip_filepath)
+            return jsonify({'error': 'No valid image files found'}), 404
+
+        app.logger.info(f"Successfully created zip file with {file_count} images")
+
         @after_this_request
         def remove_file(response):
             try:
@@ -244,7 +285,6 @@ def download_images():
         )
 
     except Exception as e:
-        # Log the full error traceback
         app.logger.error(f"Error in download_images: {str(e)}")
         app.logger.error(traceback.format_exc())
         
