@@ -281,7 +281,7 @@ def download_images():
             zip_filepath,
             mimetype='application/zip',
             as_attachment=True,
-            download_name=zip_filename
+            attachment_filename=zip_filename
         )
 
     except Exception as e:
@@ -298,6 +298,5 @@ def download_images():
             app.logger.error(f"Error during cleanup: {str(cleanup_error)}")
             
         return jsonify({'error': 'Failed to generate ZIP file'}), 500
-
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
