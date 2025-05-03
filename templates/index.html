@@ -254,7 +254,7 @@
 <body>
     <header>
         <div class="container">
-            <h1>Hydroponic Farm Monitor</h1>
+            <h1>Neural Kissan Hydroponic Farm</h1>
         </div>
     </header>
 
@@ -378,7 +378,7 @@
                         <th>Time</th>
                         <th>Temp (°C)</th>
                         <th>Humidity (%)</th>
-                        <th>Pressure</th>
+                        <th>Pressure (hPa)</th>
                     </tr>
                 </thead>
                 <tbody id="sensorDataTable">
@@ -400,15 +400,16 @@
         let previousInternalHumidity = null;
         let previousExternalTemp = null;
         let previousExternalHumidity = null;
+        let historicalData = [];
 
         // Initialize when DOM loads
         document.addEventListener('DOMContentLoaded', function() {
             initCharts();
             setupEventListeners();
-            fetchData();
+            fetchAllData();
             
             // Set up auto-refresh
-            setInterval(fetchData, 30000);
+            setInterval(fetchAllData, 30000);
         });
 
         function initCharts() {
@@ -547,36 +548,24 @@
             });
         }
 
-        function fetchData() {
-            // Fetch internal data
-            fetch('/api/latest_sensor_data')
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.error) updateInternalData(data);
-                })
-                .catch(console.error);
-
-            // Fetch external weather
-            fetch('http://api.weatherapi.com/v1/current.json?key=39551701ec73445590294530241807&q=cuncolim&aqi=no')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.current) updateExternalData(data);
-                })
-                .catch(console.error);
-
-            // Fetch camera images
-            fetch('/api/latest_images')
-                .then(response => response.json())
-                .then(updateCameraFeeds)
-                .catch(console.error);
-
-            // Fetch recent data
-            fetch('/api/sensor_data?limit=10')
-                .then(response => response.json())
-                .then(updateRecentData)
-                .catch(console.error);
-
-            updateLastUpdated();
+        function fetchAllData() {
+            // Fetch all data in parallel
+            Promise.all([
+                fetch('/api/latest_sensor_data').then(res => res.json()),
+                fetch('http://api.weatherapi.com/v1/current.json?key=39551701ec73445590294530241807&q=cuncolim&aqi=no').then(res => res.json()),
+                fetch('/api/latest_images').then(res => res.json()),
+                fetch('/api/sensor_data?limit=10').then(res => res.json())
+            ])
+            .then(([internalData, externalData, cameraData, recentData]) => {
+                if (!internalData.error) updateInternalData(internalData);
+                if (externalData.current) updateExternalData(externalData);
+                updateCameraFeeds(cameraData);
+                updateRecentData(recentData);
+                updateLastUpdated();
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            });
         }
 
         function updateInternalData(data) {
@@ -682,40 +671,31 @@
         }
 
         function updateChartData(type) {
+            // In a real implementation, fetch historical data from your backend
+            // For now using mock data that matches your API structure
             const chart = type === 'temperature' ? temperatureChart : humidityChart;
             const range = type === 'temperature' ? currentTempRange : currentHumidityRange;
-            let hours = 1;
             
-            switch(range) {
-                case '1h': hours = 1; break;
-                case '24h': hours = 24; break;
-                case '7d': hours = 168; break;
-            }
+            // Generate sample data points based on range
+            let dataPoints = 12;
+            if (range === '24h') dataPoints = 24;
+            if (range === '7d') dataPoints = 28; // 4 points per day
             
-            // Generate labels
             const labels = [];
-            const now = new Date();
-            for (let i = hours; i >= 0; i--) {
-                const time = new Date(now.getTime() - i * 60 * 60 * 1000 / hours);
-                labels.push(time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
-            }
-            
-            // Generate sample data
             const internalData = [];
             const externalData = [];
-            let lastInternal = type === 'temperature' ? 
-                (previousInternalTemp || 25) : 
-                (previousInternalHumidity || 60);
-            let lastExternal = type === 'temperature' ? 
-                (previousExternalTemp || 28) : 
-                (previousExternalHumidity || 65);
             
-            for (let i = 0; i <= hours; i++) {
-                lastInternal += (Math.random() - 0.5) * (type === 'temperature' ? 0.3 : 0.8);
-                internalData.push(lastInternal);
+            const now = new Date();
+            for (let i = dataPoints; i >= 0; i--) {
+                const time = new Date(now.getTime() - i * 60 * 60 * 1000 / (dataPoints/24));
+                labels.push(time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
                 
-                lastExternal += (Math.random() - 0.5) * (type === 'temperature' ? 0.5 : 1.5);
-                externalData.push(lastExternal);
+                // Generate realistic mock data
+                const baseInternal = type === 'temperature' ? 22 : 60;
+                const baseExternal = type === 'temperature' ? 28 : 65;
+                
+                internalData.push(baseInternal + Math.sin(i/2) * 3 + (Math.random() - 0.5) * 1.5);
+                externalData.push(baseExternal + Math.sin(i/3) * 5 + (Math.random() - 0.5) * 3);
             }
             
             // Update chart
