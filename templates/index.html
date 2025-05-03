@@ -1,1196 +1,267 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neural Kissan Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css">
-    <style>
-        :root {
-            --primary: #2ecc71;
-            --primary-dark: #27ae60;
-            --secondary: #3498db;
-            --secondary-dark: #2980b9;
-            --danger: #e74c3c;
-            --warning: #f39c12;
-            --text: #2c3e50;
-            --text-light: #7f8c8d;
-            --background: #f5f7fa;
-            --card: #ffffff;
-            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --transition: all 0.3s ease;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--background);
-            color: var(--text);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header {
-            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-            color: white;
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-        }
-
-        .logo i {
-            font-size: 2rem;
-        }
-
-        .logo h1 {
-            font-size: 1.8rem;
-            font-weight: 600;
-        }
-
-        .datetime {
-            font-size: 1rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
-        }
-
-        .datetime i {
-            margin-right: 0.5rem;
-        }
-
-        main {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 1.5rem;
-            width: 100%;
-        }
-
-        .dashboard-header {
-            margin-bottom: 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .dashboard-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--primary-dark);
-        }
-
-        .download-section {
-            display: flex;
-            gap: 0.8rem;
-        }
-
-        .btn {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.7rem 1.2rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition);
-            font-size: 0.9rem;
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--primary-dark);
-        }
-
-        .btn-secondary {
-            background-color: var(--secondary);
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background-color: var(--secondary-dark);
-        }
-
-        .dashboard-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .card {
-            background-color: var(--card);
-            border-radius: 10px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            transition: var(--transition);
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .sensor-card {
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .sensor-icon {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            font-size: 1.5rem;
-            color: var(--primary);
-            opacity: 0.7;
-        }
-
-        .sensor-label {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 0.8rem;
-        }
-
-        .sensor-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-dark);
-            margin-bottom: 1rem;
-        }
-
-        .sensor-trends {
-            height: 50px;
-            margin-bottom: 1rem;
-        }
-
-        .sensor-footer {
-            margin-top: auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.8rem;
-            color: var(--text-light);
-        }
-
-        .timestamp {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .timestamp i {
-            font-size: 0.9rem;
-        }
-
-        .last-received {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: var(--primary);
-        }
-
-        .status-dot.warning {
-            background-color: var(--warning);
-        }
-
-        .status-dot.danger {
-            background-color: var(--danger);
-        }
-
-        .charts-section {
-            margin-bottom: 2rem;
-        }
-
-        .chart-container {
-            background-color: var(--card);
-            border-radius: 10px;
-            box-shadow: var(--shadow);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .chart-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .chart-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .time-selector {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        .time-option {
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .time-option.active {
-            background-color: var(--primary);
-            color: white;
-        }
-
-        .camera-section {
-            margin-top: 2rem;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .section-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--primary-dark);
-        }
-
-        .camera-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .camera-card {
-            background-color: var(--card);
-            border-radius: 10px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            transition: var(--transition);
-        }
-
-        .camera-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .camera-header {
-            padding: 1rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .camera-title {
-            font-weight: 600;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .camera-title i {
-            color: var(--primary);
-        }
-
-        .camera-image-container {
-            position: relative;
-            height: 200px;
-            overflow: hidden;
-        }
-
-        .camera-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: var(--transition);
-        }
-
-        .camera-card:hover .camera-image {
-            transform: scale(1.05);
-        }
-
-        .camera-footer {
-            padding: 1rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.8rem;
-            color: var(--text-light);
-        }
-
-        .camera-actions {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .camera-btn {
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(255, 255, 255, 0.8);
-            border-radius: 50%;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .camera-btn:hover {
-            background-color: white;
-            transform: scale(1.1);
-        }
-
-        .camera-btn i {
-            font-size: 0.9rem;
-            color: var(--text);
-        }
-
-        .empty-state {
-            padding: 3rem;
-            text-align: center;
-            color: var(--text-light);
-        }
-
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.3;
-        }
-
-        .empty-state p {
-            font-size: 1.1rem;
-            opacity: 0.8;
-        }
-
-        .loader {
-            width: 100%;
-            height: 3px;
-            background-color: rgba(0, 0, 0, 0.05);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .loader::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 30%;
-            background-color: var(--primary);
-            animation: loading 1.5s infinite ease-in-out;
-        }
-
-        @keyframes loading {
-            0% { left: -30%; }
-            100% { left: 100%; }
-        }
-
-        .toast-container {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.8rem;
-            z-index: 1000;
-        }
-
-        .toast {
-            background-color: white;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            padding: 1rem 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            min-width: 300px;
-            max-width: 400px;
-            animation: toast-in 0.3s ease forwards;
-        }
-
-        .toast.hide {
-            animation: toast-out 0.3s ease forwards;
-        }
-
-        .toast-icon {
-            font-size: 1.5rem;
-        }
-
-        .toast-content {
-            flex-grow: 1;
-        }
-
-        .toast-title {
-            font-weight: 600;
-            margin-bottom: 0.2rem;
-        }
-
-        .toast-message {
-            font-size: 0.9rem;
-            color: var(--text-light);
-        }
-
-        .toast-close {
-            cursor: pointer;
-            font-size: 1.2rem;
-            color: var(--text-light);
-            transition: var(--transition);
-        }
-
-        .toast-close:hover {
-            color: var(--text);
-        }
-
-        .toast-success .toast-icon {
-            color: var(--primary);
-        }
-
-        .toast-error .toast-icon {
-            color: var(--danger);
-        }
-
-        @keyframes toast-in {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        @keyframes toast-out {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-
-        .footer {
-            margin-top: auto;
-            background-color: #2c3e50;
-            color: white;
-            padding: 1.5rem;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-
-        .footer a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-
-        /* Responsive styles */
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                gap: 1rem;
-                text-align: center;
-            }
-
-            .logo {
-                justify-content: center;
-            }
-
-            .dashboard-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .download-section {
-                width: 100%;
-                justify-content: space-between;
-            }
-
-            .btn {
-                padding: 0.6rem 1rem;
-                font-size: 0.8rem;
-            }
-
-            .camera-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .dashboard-cards {
-                grid-template-columns: 1fr;
-            }
-
-            .logo h1 {
-                font-size: 1.5rem;
-            }
-
-            .datetime {
-                font-size: 0.8rem;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Neural Kissan Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f6fa;
+      color: #2d3436;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #27ae60;
+      margin-bottom: 10px;
+    }
+    .datetime {
+      text-align: center;
+      color: #636e72;
+      margin-bottom: 20px;
+    }
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    .card h2 {
+      margin: 0;
+      font-size: 18px;
+      color: #09804c;
+    }
+    .value {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 10px;
+      color: #2d3436;
+    }
+    .timestamp, .received {
+      font-size: 13px;
+      color: #636e72;
+      margin-top: 5px;
+    }
+    .received.late {
+      color: #e74c3c;
+    }
+
+    .chart-section {
+      margin: 40px 0;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    .images {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .images img {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .images img:hover {
+      transform: scale(1.02);
+    }
+
+    .buttons {
+      text-align: center;
+      margin: 30px 0;
+    }
+
+    .btn {
+      padding: 12px 20px;
+      margin: 10px;
+      border: none;
+      background: #27ae60;
+      color: white;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #219150;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0; top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 10px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+  </style>
 </head>
 <body>
-    <div class="loader" id="page-loader"></div>
-    <header class="header">
-        <div class="header-content">
-            <div class="logo">
-                <i class="fas fa-leaf"></i>
-                <h1>Neural Kissan Dashboard</h1>
-            </div>
-            <div class="datetime" id="current-datetime">
-                <i class="far fa-clock"></i>
-                <span id="datetime-text">Loading...</span>
-            </div>
-        </div>
-    </header>
+  <h1>Neural Kissan Dashboard</h1>
+  <div class="datetime" id="datetime">Loading time...</div>
 
-    <main>
-        <div class="dashboard-header">
-            <h2 class="dashboard-title">Farm Monitoring System</h2>
-            <div class="download-section">
-                <button class="btn btn-primary" onclick="downloadSensorData()">
-                    <i class="fas fa-download"></i>
-                    <span>Download Sensor Data</span>
-                </button>
-                <button class="btn btn-secondary" onclick="downloadImages()">
-                    <i class="fas fa-images"></i>
-                    <span>Download Images</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="dashboard-cards">
-            <div class="card sensor-card">
-                <div class="sensor-icon">
-                    <i class="fas fa-temperature-high"></i>
-                </div>
-                <div class="sensor-label">Temperature</div>
-                <div class="sensor-value" id="temperature">--</div>
-                <div class="sensor-trends">
-                    <canvas id="temp-chart"></canvas>
-                </div>
-                <div class="sensor-footer">
-                    <div class="timestamp">
-                        <i class="far fa-calendar-alt"></i>
-                        <span id="temp-timestamp">--</span>
-                    </div>
-                    <div class="last-received">
-                        <div class="status-dot" id="temp-status"></div>
-                        <span id="temp-received">--</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card sensor-card">
-                <div class="sensor-icon">
-                    <i class="fas fa-tint"></i>
-                </div>
-                <div class="sensor-label">Humidity</div>
-                <div class="sensor-value" id="humidity">--</div>
-                <div class="sensor-trends">
-                    <canvas id="humid-chart"></canvas>
-                </div>
-                <div class="sensor-footer">
-                    <div class="timestamp">
-                        <i class="far fa-calendar-alt"></i>
-                        <span id="humid-timestamp">--</span>
-                    </div>
-                    <div class="last-received">
-                        <div class="status-dot" id="humid-status"></div>
-                        <span id="humid-received">--</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card sensor-card">
-                <div class="sensor-icon">
-                    <i class="fas fa-compress-alt"></i>
-                </div>
-                <div class="sensor-label">Pressure</div>
-                <div class="sensor-value" id="pressure">--</div>
-                <div class="sensor-trends">
-                    <canvas id="pressure-chart"></canvas>
-                </div>
-                <div class="sensor-footer">
-                    <div class="timestamp">
-                        <i class="far fa-calendar-alt"></i>
-                        <span id="pressure-timestamp">--</span>
-                    </div>
-                    <div class="last-received">
-                        <div class="status-dot" id="pressure-status"></div>
-                        <span id="pressure-received">--</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card sensor-card">
-                <div class="sensor-icon">
-                    <i class="fas fa-wind"></i>
-                </div>
-                <div class="sensor-label">Gas Resistance</div>
-                <div class="sensor-value" id="gas">--</div>
-                <div class="sensor-trends">
-                    <canvas id="gas-chart"></canvas>
-                </div>
-                <div class="sensor-footer">
-                    <div class="timestamp">
-                        <i class="far fa-calendar-alt"></i>
-                        <span id="gas-timestamp">--</span>
-                    </div>
-                    <div class="last-received">
-                        <div class="status-dot" id="gas-status"></div>
-                        <span id="gas-received">--</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card sensor-card">
-                <div class="sensor-icon">
-                    <i class="fas fa-lungs"></i>
-                </div>
-                <div class="sensor-label">Air Quality (IAQ)</div>
-                <div class="sensor-value" id="iaq">--</div>
-                <div class="sensor-trends">
-                    <canvas id="iaq-chart"></canvas>
-                </div>
-                <div class="sensor-footer">
-                    <div class="timestamp">
-                        <i class="far fa-calendar-alt"></i>
-                        <span id="iaq-timestamp">--</span>
-                    </div>
-                    <div class="last-received">
-                        <div class="status-dot" id="iaq-status"></div>
-                        <span id="iaq-received">--</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="charts-section">
-            <div class="chart-container">
-                <div class="chart-header">
-                    <div class="chart-title">Environmental Trends</div>
-                    <div class="time-selector">
-                        <div class="time-option active" data-time="24h">24h</div>
-                        <div class="time-option" data-time="7d">7d</div>
-                        <div class="time-option" data-time="30d">30d</div>
-                    </div>
-                </div>
-                <canvas id="environmental-chart" height="250"></canvas>
-            </div>
-        </div>
-
-        <div class="camera-section">
-            <div class="section-header">
-                <div class="section-title">Farm Cameras</div>
-                <div class="time-selector">
-                    <div class="time-option active" data-time="live">Live</div>
-                    <div class="time-option" data-time="hourly">Hourly</div>
-                    <div class="time-option" data-time="daily">Daily</div>
-                </div>
-            </div>
-            <div class="camera-grid" id="camera-grid">
-                <!-- Camera cards will be added here dynamically -->
-            </div>
-        </div>
-    </main>
-
-    <div class="toast-container" id="toast-container">
-        <!-- Toasts will be added here dynamically -->
+  <div class="dashboard">
+    <div class="card">
+      <h2>Temperature</h2>
+      <div class="value" id="temperature">-- °C</div>
+      <div class="timestamp" id="temp-timestamp">--</div>
+      <div class="received" id="temp-received">--</div>
     </div>
+    <div class="card">
+      <h2>Humidity</h2>
+      <div class="value" id="humidity">-- %</div>
+      <div class="timestamp" id="humid-timestamp">--</div>
+      <div class="received" id="humid-received">--</div>
+    </div>
+  </div>
 
-    <footer class="footer">
-        <p>&copy; 2025 Neural Kissan | Smart Farming Solutions | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
-    </footer>
+  <div class="chart-section">
+    <canvas id="sensorChart" height="300"></canvas>
+  </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
-    <script>
-        // Hide loader when page is fully loaded
-        window.addEventListener('load', function() {
-            document.getElementById('page-loader').style.display = 'none';
+  <div class="buttons">
+    <button class="btn" onclick="window.location.href='/api/download_csv'">Download Sensor Data (CSV)</button>
+    <button class="btn" onclick="window.location.href='/api/download_zip'">Download Images (ZIP)</button>
+  </div>
+
+  <div class="images" id="imageContainer">
+    <!-- Dynamically loaded images -->
+  </div>
+
+  <div class="modal" id="modal" onclick="this.classList.remove('active')">
+    <img id="modalImage" src="" alt="Full Image" />
+  </div>
+
+  <script>
+    const chart = new Chart(document.getElementById('sensorChart'), {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: 'Temperature (°C)',
+            data: [],
+            borderColor: '#e67e22',
+            fill: false
+          },
+          {
+            label: 'Humidity (%)',
+            data: [],
+            borderColor: '#3498db',
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'top' } },
+        scales: { x: { display: true }, y: { display: true } }
+      }
+    });
+
+    function updateTime() {
+      document.getElementById('datetime').innerText = new Date().toLocaleString();
+    }
+
+    function formatDiff(seconds) {
+      if (seconds < 60) return `${seconds}s ago`;
+      if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+      if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+      return `${Math.floor(seconds / 86400)}d ago`;
+    }
+
+    function updateSensors() {
+      fetch('/api/latest_sensor_data')
+        .then(res => res.json())
+        .then(data => {
+          const ts = new Date(data.timestamp);
+          const now = new Date();
+          const diffSec = Math.floor((now - ts) / 1000);
+
+          document.getElementById('temperature').innerText = `${data.temperature.toFixed(1)} °C`;
+          document.getElementById('humidity').innerText = `${data.humidity.toFixed(1)} %`;
+
+          document.getElementById('temp-timestamp').innerText = `Updated: ${ts.toLocaleString()}`;
+          document.getElementById('humid-timestamp').innerText = `Updated: ${ts.toLocaleString()}`;
+
+          const tempReceived = document.getElementById('temp-received');
+          const humidReceived = document.getElementById('humid-received');
+
+          tempReceived.innerText = `Last received: ${formatDiff(diffSec)}`;
+          humidReceived.innerText = `Last received: ${formatDiff(diffSec)}`;
+
+          tempReceived.className = `received ${diffSec > 300 ? 'late' : ''}`;
+          humidReceived.className = `received ${diffSec > 300 ? 'late' : ''}`;
+
+          // Chart update
+          if (chart.data.labels.length >= 10) {
+            chart.data.labels.shift();
+            chart.data.datasets[0].data.shift();
+            chart.data.datasets[1].data.shift();
+          }
+          chart.data.labels.push(ts.toLocaleTimeString());
+          chart.data.datasets[0].data.push(data.temperature);
+          chart.data.datasets[1].data.push(data.humidity);
+          chart.update();
         });
+    }
 
-        // Add event handler to simulate data thresholds and alerts
-        function checkThresholds(data) {
-            if (data.temperature > 30) {
-                showToast('Temperature Alert', 'Temperature exceeds safe threshold for crops', 'error');
-            }
-            
-            if (data.humidity < 30) {
-                showToast('Low Humidity', 'Humidity levels are below recommended values', 'error');
-            }
-            
-            if (data.iaq > 150) {
-                showToast('Air Quality Warning', 'IAQ values indicate poor air quality', 'error');
-            }
-        }
-
-        // Weather forecast section
-        function updateWeatherForecast() {
-            // Simulated weather data
-            const weatherData = [
-                { day: 'Today', temp: '24°C', icon: 'fa-sun', description: 'Sunny' },
-                { day: 'Tomorrow', temp: '22°C', icon: 'fa-cloud-sun', description: 'Partly Cloudy' },
-                { day: 'Sunday', temp: '19°C', icon: 'fa-cloud-rain', description: 'Light Rain' },
-                { day: 'Monday', temp: '21°C', icon: 'fa-cloud', description: 'Cloudy' },
-                { day: 'Tuesday', temp: '25°C', icon: 'fa-sun', description: 'Sunny' }
-            ];
-            
-            // In a real implementation, this would update a weather forecast section
-        }
-
-        // Add responsiveness to the dashboard
-        function handleResize() {
-            if (window.innerWidth < 768) {
-                // Adjust charts for mobile view
-                envChart.options.legend.display = false;
-                envChart.update();
-            } else {
-                // Restore desktop view
-                envChart.options.legend.display = true;
-                envChart.update();
-            }
-        }
-
-        // Refresh charts when tab becomes visible
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                updateSensorData();
-                updateCameraImages();
-            }
+    function loadImages() {
+      fetch('/api/latest_images')
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById('imageContainer');
+          container.innerHTML = '';
+          for (const [key, val] of Object.entries(data)) {
+            const img = document.createElement('img');
+            img.src = val.url;
+            img.alt = key;
+            img.onclick = () => {
+              document.getElementById('modalImage').src = val.url;
+              document.getElementById('modal').classList.add('active');
+            };
+            container.appendChild(img);
+          }
         });
+    }
 
-        // Initialize everything
-        updateDateTime();
-        updateSensorData();
-        updateCameraImages();
-        handleResize();
+    setInterval(() => {
+      updateTime();
+      updateSensors();
+    }, 5000);
 
-        // Set up interval updates
-        setInterval(updateDateTime, 1000);
-        setInterval(updateSensorData, 5000);
-        setInterval(updateCameraImages, 10000);
-        window.addEventListener('resize', handleResize);
-
-        // Show welcome toast
-        setTimeout(() => {
-            showToast('Welcome', 'Neural Kissan Dashboard loaded successfully', 'success');
-        }, 1000);
-    </script>
+    updateTime();
+    updateSensors();
+    loadImages();
+  </script>
 </body>
 </html>
-
-        // Initialize trend charts
-        const chartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            elements: {
-                point: {
-                    radius: 0
-                },
-                line: {
-                    tension: 0.4
-                }
-            },
-            legend: {
-                display: false
-            },
-            scales: {
-                xAxes: [{
-                    display: false
-                }],
-                yAxes: [{
-                    display: false
-                }]
-            },
-            tooltips: {
-                enabled: false
-            }
-        };
-
-        // Sample data for mini charts
-        const trendData = {
-            labels: Array(24).fill(''),
-            datasets: [{
-                backgroundColor: 'rgba(46, 204, 113, 0.2)',
-                borderColor: 'rgba(46, 204, 113, 1)',
-                data: Array(24).fill(0).map(() => Math.random() * 10 + 20),
-                fill: true
-            }]
-        };
-
-        // Initialize mini charts
-        const sensorIds = ['temp', 'humid', 'pressure', 'gas', 'iaq'];
-        const trendCharts = {};
-        
-        sensorIds.forEach(id => {
-            const ctx = document.getElementById(`${id}-chart`).getContext('2d');
-            trendCharts[id] = new Chart(ctx, {
-                type: 'line',
-                data: JSON.parse(JSON.stringify(trendData)), // Deep copy
-                options: chartOptions
-            });
-        });
-
-        // Initialize environmental chart
-        const envCtx = document.getElementById('environmental-chart').getContext('2d');
-        const envChart = new Chart(envCtx, {
-            type: 'line',
-            data: {
-                labels: Array(24).fill('').map((_, i) => `${i}:00`),
-                datasets: [
-                    {
-                        label: 'Temperature (°C)',
-                        data: Array(24).fill(0).map(() => Math.random() * 10 + 20),
-                        borderColor: '#e74c3c',
-                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                        fill: false
-                    },
-                    {
-                        label: 'Humidity (%)',
-                        data: Array(24).fill(0).map(() => Math.random() * 30 + 40),
-                        borderColor: '#3498db',
-                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                        fill: false
-                    },
-                    {
-                        label: 'IAQ',
-                        data: Array(24).fill(0).map(() => Math.random() * 50 + 100),
-                        borderColor: '#2ecc71',
-                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                        fill: false
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                elements: {
-                    line: {
-                        tension: 0.4
-                    }
-                },
-                legend: {
-                    position: 'bottom'
-                },
-                scales: {
-                    xAxes: [{
-                        gridLines: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        }
-                    }],
-                    yAxes: [{
-                        gridLines: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
-                        ticks: {
-                            beginAtZero: false
-                        }
-                    }]
-                }
-            }
-        });
-
-        // Mock data for sensor history
-        const mockSensorHistory = {
-            temperature: Array(24).fill(0).map(() => Math.random() * 10 + 20),
-            humidity: Array(24).fill(0).map(() => Math.random() * 30 + 40),
-            pressure: Array(24).fill(0).map(() => Math.random() * 10 + 1010),
-            gas_resistance: Array(24).fill(0).map(() => Math.random() * 100 + 400),
-            iaq: Array(24).fill(0).map(() => Math.random() * 50 + 100)
-        };
-
-        // Mock camera data
-        const mockCameras = [
-            { id: 'camera_1', name: 'North Field', timestamp: new Date() },
-            { id: 'camera_2', name: 'Greenhouse', timestamp: new Date() },
-            { id: 'camera_3', name: 'Storage Area', timestamp: new Date(Date.now() - 7200000) },
-            { id: 'camera_4', name: 'South Field', timestamp: new Date() }
-        ];
-
-        // Update date and time
-        function updateDateTime() {
-            const now = new Date();
-            document.getElementById('datetime-text').textContent = now.toLocaleString();
-        }
-
-        // Format time difference
-        function formatTimeDiff(seconds) {
-            if (seconds < 60) return `${seconds} seconds ago`;
-            if (seconds < 3600) return `${Math.floor(seconds/60)} minutes ago`;
-            if (seconds < 86400) return `${Math.floor(seconds/3600)} hours ago`;
-            return `${Math.floor(seconds/86400)} days ago`;
-        }
-
-        // Get status based on time difference
-        function getStatusClass(seconds) {
-            if (seconds < 60) return '';
-            if (seconds < 300) return 'warning';
-            return 'danger';
-        }
-
-        // Update sensor data
-        function updateSensorData() {
-            // Simulate API fetch
-            setTimeout(() => {
-                // Mock data
-                const data = {
-                    temperature: 24.5 + (Math.random() * 2 - 1),
-                    humidity: 55.3 + (Math.random() * 5 - 2.5),
-                    pressure: 1013.2 + (Math.random() * 2 - 1),
-                    gas_resistance: 450.7 + (Math.random() * 20 - 10),
-                    iaq: 120.5 + (Math.random() * 10 - 5),
-                    timestamp: new Date()
-                };
-
-                const now = new Date();
-                const dataTime = data.timestamp;
-                const timeDiff = Math.floor((now - dataTime) / 1000);
-
-                // Update display values
-                document.getElementById('temperature').textContent = `${data.temperature.toFixed(1)}°C`;
-                document.getElementById('humidity').textContent = `${data.humidity.toFixed(1)}%`;
-                document.getElementById('pressure').textContent = `${data.pressure.toFixed(1)} hPa`;
-                document.getElementById('gas').textContent = `${data.gas_resistance.toFixed(1)} kΩ`;
-                document.getElementById('iaq').textContent = data.iaq.toFixed(1);
-
-                const timestamp = dataTime.toLocaleTimeString();
-
-                // Update each sensor card
-                ['temp', 'humid', 'pressure', 'gas', 'iaq'].forEach((sensor, index) => {
-                    document.getElementById(`${sensor}-timestamp`).textContent = timestamp;
-                    
-                    const receivedElement = document.getElementById(`${sensor}-received`);
-                    receivedElement.textContent = formatTimeDiff(timeDiff);
-                    
-                    const statusDot = document.getElementById(`${sensor}-status`);
-                    statusDot.className = `status-dot ${getStatusClass(timeDiff)}`;
-
-                    // Update chart data (rolling)
-                    const sensorData = Object.values(mockSensorHistory)[index];
-                    sensorData.shift();
-                    sensorData.push(Object.values(data)[index]);
-                    
-                    trendCharts[sensor].data.datasets[0].data = sensorData;
-                    trendCharts[sensor].update();
-                });
-
-                // Update environmental chart
-                envChart.data.datasets[0].data.shift();
-                envChart.data.datasets[0].data.push(data.temperature);
-                envChart.data.datasets[1].data.shift();
-                envChart.data.datasets[1].data.push(data.humidity);
-                envChart.data.datasets[2].data.shift();
-                envChart.data.datasets[2].data.push(data.iaq);
-                envChart.update();
-                
-                // Show success toast occasionally
-                if (Math.random() > 0.8) {
-                    showToast('Data Updated', 'Sensor readings refreshed successfully', 'success');
-                }
-            }, 800);
-        }
-
-        // Update cameras display
-        function updateCameraImages() {
-            const cameraGrid = document.getElementById('camera-grid');
-            
-            // Clear existing content
-            cameraGrid.innerHTML = '';
-            
-            if (mockCameras.length === 0) {
-                cameraGrid.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-camera-retro"></i>
-                        <p>No camera feeds available</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            mockCameras.forEach(camera => {
-                const now = new Date();
-                const imageTimestamp = camera.timestamp;
-                const timeDiff = Math.floor((now - imageTimestamp) / 1000);
-                const statusClass = getStatusClass(timeDiff);
-                
-                const card = document.createElement('div');
-                card.className = 'camera-card';
-                
-                card.innerHTML = `
-                    <div class="camera-header">
-                        <div class="camera-title">
-                            <i class="fas fa-video"></i>
-                            ${camera.name}
-                        </div>
-                        <div class="last-received">
-                            <div class="status-dot ${statusClass}"></div>
-                            <span>${formatTimeDiff(timeDiff)}</span>
-                        </div>
-                    </div>
-                    <div class="camera-image-container">
-                        <img src="/api/placeholder/640/360" class="camera-image" alt="${camera.name}" loading="lazy">
-                        <div class="camera-actions">
-                            <div class="camera-btn" onclick="enlargeImage(this)" title="Enlarge">
-                                <i class="fas fa-expand"></i>
-                            </div>
-                            <div class="camera-btn" onclick="downloadImage('${camera.id}')" title="Download">
-                                <i class="fas fa-download"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="camera-footer">
-                        <div class="timestamp">
-                            <i class="far fa-calendar-alt"></i>
-                            <span>${imageTimestamp.toLocaleString()}</span>
-                        </div>
-                    </div>
-                `;
-                
-                cameraGrid.appendChild(card);
-            });
-        }
-
-        // Toast notification system
-        function showToast(title, message, type = 'success') {
-            const toastContainer = document.getElementById('toast-container');
-            const toastId = 'toast-' + Date.now();
-            
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.id = toastId;
-            
-            toast.innerHTML = `
-                <div class="toast-icon">
-                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-                </div>
-                <div class="toast-content">
-                    <div class="toast-title">${title}</div>
-                    <div class="toast-message">${message}</div>
-                </div>
-                <div class="toast-close" onclick="closeToast('${toastId}')">
-                    <i class="fas fa-times"></i>
-                </div>
-            `;
-            
-            toastContainer.appendChild(toast);
-            
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                closeToast(toastId);
-            }, 5000);
-        }
-
-        function closeToast(toastId) {
-            const toast = document.getElementById(toastId);
-            if (toast) {
-                toast.classList.add('hide');
-                setTimeout(() => {
-                    toast.remove();
-                }, 300);
-            }
-        }
-
-        // Handle download actions
-        function downloadSensorData() {
-            showToast('Download Started', 'Sensor data is being prepared for download', 'success');
-            // In a real app, this would trigger the actual download
-            setTimeout(() => {
-                // Simulating download completion
-                showToast('Download Complete', 'Sensor data has been downloaded successfully', 'success');
-            }, 2000);
-        }
-
-        function downloadImages() {
-            showToast('Processing', 'Preparing image archive for download', 'success');
-            // In a real app, this would trigger the actual download
-            setTimeout(() => {
-                // Simulating download completion
-                showToast('Download Complete', 'Images have been downloaded successfully', 'success');
-            }, 3000);
-        }
-
-        function downloadImage(cameraId) {
-            showToast('Processing', `Downloading image from ${cameraId.replace('camera_', 'Camera ')}`, 'success');
-        }
-
-        // Image enlargement
-        function enlargeImage(element) {
-            const imgSrc = element.closest('.camera-image-container').querySelector('img').src;
-            const modal = document.createElement('div');
-            modal.style.position = 'fixed';
-            modal.style.top = '0';
-            modal.style.left = '0';
-            modal.style.width = '100%';
-            modal.style.height = '100%';
-            modal.style.backgroundColor = 'rgba(0,0,0,0.9)';
-            modal.style.display = 'flex';
-            modal.style.alignItems = 'center';
-            modal.style.justifyContent = 'center';
-            modal.style.zIndex = '1000';
-            modal.style.cursor = 'pointer';
-            modal.onclick = () => document.body.removeChild(modal);
-            
-            const img = document.createElement('img');
-            img.src = imgSrc;
-            img.style.maxWidth = '90%';
-            img.style.maxHeight = '90%';
-            img.style.objectFit = 'contain';
-            
-            modal.appendChild(img);
-            document.body.appendChild(modal);
-        }
-
-        // Time period selector functionality
-        document.querySelectorAll('.time-selector').forEach(selector => {
-            selector.querySelectorAll('.time-option').forEach(option => {
-                option.addEventListener('click', function() {
-                    selector.querySelectorAll('.time-option').forEach(opt => opt.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // Here you would update the relevant chart or view
-                    const timeRange = this.getAttribute('data-time');
-                    showToast('View Updated', `Displaying data for ${timeRange} time range`, 'success');
-                });
-            });
-        });
