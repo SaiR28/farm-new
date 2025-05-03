@@ -1,267 +1,744 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Neural Kissan Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f5f6fa;
-      color: #2d3436;
-      padding: 20px;
-    }
-    h1 {
-      text-align: center;
-      color: #27ae60;
-      margin-bottom: 10px;
-    }
-    .datetime {
-      text-align: center;
-      color: #636e72;
-      margin-bottom: 20px;
-    }
-    .dashboard {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-    }
-    .card {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-    .card h2 {
-      margin: 0;
-      font-size: 18px;
-      color: #09804c;
-    }
-    .value {
-      font-size: 24px;
-      font-weight: bold;
-      margin-top: 10px;
-      color: #2d3436;
-    }
-    .timestamp, .received {
-      font-size: 13px;
-      color: #636e72;
-      margin-top: 5px;
-    }
-    .received.late {
-      color: #e74c3c;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Kissan Hydroponic Farm</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment"></script>
+    <style>
+        :root {
+            --primary: #46db7d;
+            --primary-dark: #2bb367;
+            --primary-light: #a5ecc2;
+            --text: #333;
+            --text-light: #666;
+            --bg: #f8f9fa;
+            --card-bg: #fff;
+            --border: #e0e0e0;
+        }
 
-    .chart-section {
-      margin: 40px 0;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    .images {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
-      margin-top: 30px;
-    }
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+        }
 
-    .images img {
-      width: 100%;
-      height: 250px;
-      object-fit: cover;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-    .images img:hover {
-      transform: scale(1.02);
-    }
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px 0;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
 
-    .buttons {
-      text-align: center;
-      margin: 30px 0;
-    }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
 
-    .btn {
-      padding: 12px 20px;
-      margin: 10px;
-      border: none;
-      background: #27ae60;
-      color: white;
-      font-weight: bold;
-      border-radius: 6px;
-      cursor: pointer;
-    }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
 
-    .btn:hover {
-      background: #219150;
-    }
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+        }
 
-    /* Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 999;
-      left: 0; top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.8);
-      justify-content: center;
-      align-items: center;
-    }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
 
-    .modal img {
-      max-width: 90%;
-      max-height: 90%;
-      border-radius: 10px;
-    }
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-light);
+        }
 
-    .modal.active {
-      display: flex;
-    }
-  </style>
+        .card-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 5px 0;
+            color: var(--primary-dark);
+        }
+
+        .card-footer {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .trend {
+            display: flex;
+            align-items: center;
+            font-size: 0.8rem;
+            padding: 3px 6px;
+            border-radius: 4px;
+        }
+
+        .trend.up {
+            background-color: rgba(255, 50, 50, 0.1);
+            color: #ff3232;
+        }
+
+        .trend.down {
+            background-color: rgba(50, 150, 255, 0.1);
+            color: #3296ff;
+        }
+
+        .trend.neutral {
+            background-color: rgba(150, 150, 150, 0.1);
+            color: var(--text-light);
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .chart-title {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .time-btn {
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .time-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .chart-wrapper {
+            height: 250px;
+            position: relative;
+        }
+
+        .camera-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .camera-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+        }
+
+        .camera-image {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .camera-info {
+            padding: 10px;
+        }
+
+        .camera-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .camera-time {
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+        }
+
+        .data-table th {
+            background: var(--primary);
+            color: white;
+            text-align: left;
+            padding: 8px 12px;
+            font-weight: 500;
+        }
+
+        .data-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: rgba(70, 219, 125, 0.05);
+        }
+
+        .last-updated {
+            text-align: right;
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .chart-wrapper {
+                height: 200px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .card-value {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h1>Neural Kissan Dashboard</h1>
-  <div class="datetime" id="datetime">Loading time...</div>
+    <header>
+        <div class="container">
+            <h1>Hydroponic Farm Monitor</h1>
+        </div>
+    </header>
 
-  <div class="dashboard">
-    <div class="card">
-      <h2>Temperature</h2>
-      <div class="value" id="temperature">-- °C</div>
-      <div class="timestamp" id="temp-timestamp">--</div>
-      <div class="received" id="temp-received">--</div>
+    <div class="container">
+        <div class="last-updated" id="lastUpdated">
+            Last updated: Loading...
+        </div>
+
+        <div class="dashboard">
+            <!-- Internal Temperature -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Internal Temp</div>
+                    <div class="trend neutral" id="internalTempTrend">
+                        <span id="internalTempChange">0.0°</span>
+                    </div>
+                </div>
+                <div class="card-value" id="internalTemp">--</div>
+                <div class="card-footer">
+                    <span id="internalTempTime">--:--</span>
+                </div>
+            </div>
+
+            <!-- Internal Humidity -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Internal Humidity</div>
+                    <div class="trend neutral" id="internalHumidityTrend">
+                        <span id="internalHumidityChange">0.0%</span>
+                    </div>
+                </div>
+                <div class="card-value" id="internalHumidity">--</div>
+                <div class="card-footer">
+                    <span id="internalHumidityTime">--:--</span>
+                </div>
+            </div>
+
+            <!-- External Temperature -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">External Temp</div>
+                    <div class="trend neutral" id="externalTempTrend">
+                        <span id="externalTempChange">0.0°</span>
+                    </div>
+                </div>
+                <div class="card-value" id="externalTemp">--</div>
+                <div class="card-footer">
+                    <span id="externalTempTime">--:--</span>
+                </div>
+            </div>
+
+            <!-- External Humidity -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">External Humidity</div>
+                    <div class="trend neutral" id="externalHumidityTrend">
+                        <span id="externalHumidityChange">0.0%</span>
+                    </div>
+                </div>
+                <div class="card-value" id="externalHumidity">--</div>
+                <div class="card-footer">
+                    <span id="externalHumidityTime">--:--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Temperature Chart -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">Temperature Trend</div>
+                <div class="chart-controls">
+                    <button class="time-btn active" data-range="1h">1H</button>
+                    <button class="time-btn" data-range="24h">24H</button>
+                    <button class="time-btn" data-range="7d">7D</button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="temperatureChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Humidity Chart -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">Humidity Trend</div>
+                <div class="chart-controls">
+                    <button class="time-btn active" data-range="1h">1H</button>
+                    <button class="time-btn" data-range="24h">24H</button>
+                    <button class="time-btn" data-range="7d">7D</button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="humidityChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Camera Feeds -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">Camera Feeds</div>
+            </div>
+            <div class="camera-grid" id="cameraFeeds">
+                <div class="camera-card">
+                    <img src="https://via.placeholder.com/300x160?text=Loading+Feed" class="camera-image" id="cameraImage1">
+                    <div class="camera-info">
+                        <div class="camera-title">Camera 1</div>
+                        <div class="camera-time" id="cameraTime1">--:--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Data -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">Recent Readings</div>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Temp (°C)</th>
+                        <th>Humidity (%)</th>
+                        <th>Pressure</th>
+                    </tr>
+                </thead>
+                <tbody id="sensorDataTable">
+                    <tr>
+                        <td colspan="4">Loading data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
-    <div class="card">
-      <h2>Humidity</h2>
-      <div class="value" id="humidity">-- %</div>
-      <div class="timestamp" id="humid-timestamp">--</div>
-      <div class="received" id="humid-received">--</div>
-    </div>
-  </div>
 
-  <div class="chart-section">
-    <canvas id="sensorChart" height="300"></canvas>
-  </div>
+    <script>
+        // Global variables
+        let temperatureChart;
+        let humidityChart;
+        let currentTempRange = '1h';
+        let currentHumidityRange = '1h';
+        let previousInternalTemp = null;
+        let previousInternalHumidity = null;
+        let previousExternalTemp = null;
+        let previousExternalHumidity = null;
 
-  <div class="buttons">
-    <button class="btn" onclick="window.location.href='/api/download_csv'">Download Sensor Data (CSV)</button>
-    <button class="btn" onclick="window.location.href='/api/download_zip'">Download Images (ZIP)</button>
-  </div>
-
-  <div class="images" id="imageContainer">
-    <!-- Dynamically loaded images -->
-  </div>
-
-  <div class="modal" id="modal" onclick="this.classList.remove('active')">
-    <img id="modalImage" src="" alt="Full Image" />
-  </div>
-
-  <script>
-    const chart = new Chart(document.getElementById('sensorChart'), {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [
-          {
-            label: 'Temperature (°C)',
-            data: [],
-            borderColor: '#e67e22',
-            fill: false
-          },
-          {
-            label: 'Humidity (%)',
-            data: [],
-            borderColor: '#3498db',
-            fill: false
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { position: 'top' } },
-        scales: { x: { display: true }, y: { display: true } }
-      }
-    });
-
-    function updateTime() {
-      document.getElementById('datetime').innerText = new Date().toLocaleString();
-    }
-
-    function formatDiff(seconds) {
-      if (seconds < 60) return `${seconds}s ago`;
-      if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-      if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-      return `${Math.floor(seconds / 86400)}d ago`;
-    }
-
-    function updateSensors() {
-      fetch('/api/latest_sensor_data')
-        .then(res => res.json())
-        .then(data => {
-          const ts = new Date(data.timestamp);
-          const now = new Date();
-          const diffSec = Math.floor((now - ts) / 1000);
-
-          document.getElementById('temperature').innerText = `${data.temperature.toFixed(1)} °C`;
-          document.getElementById('humidity').innerText = `${data.humidity.toFixed(1)} %`;
-
-          document.getElementById('temp-timestamp').innerText = `Updated: ${ts.toLocaleString()}`;
-          document.getElementById('humid-timestamp').innerText = `Updated: ${ts.toLocaleString()}`;
-
-          const tempReceived = document.getElementById('temp-received');
-          const humidReceived = document.getElementById('humid-received');
-
-          tempReceived.innerText = `Last received: ${formatDiff(diffSec)}`;
-          humidReceived.innerText = `Last received: ${formatDiff(diffSec)}`;
-
-          tempReceived.className = `received ${diffSec > 300 ? 'late' : ''}`;
-          humidReceived.className = `received ${diffSec > 300 ? 'late' : ''}`;
-
-          // Chart update
-          if (chart.data.labels.length >= 10) {
-            chart.data.labels.shift();
-            chart.data.datasets[0].data.shift();
-            chart.data.datasets[1].data.shift();
-          }
-          chart.data.labels.push(ts.toLocaleTimeString());
-          chart.data.datasets[0].data.push(data.temperature);
-          chart.data.datasets[1].data.push(data.humidity);
-          chart.update();
+        // Initialize when DOM loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            setupEventListeners();
+            fetchData();
+            
+            // Set up auto-refresh
+            setInterval(fetchData, 30000);
         });
-    }
 
-    function loadImages() {
-      fetch('/api/latest_images')
-        .then(res => res.json())
-        .then(data => {
-          const container = document.getElementById('imageContainer');
-          container.innerHTML = '';
-          for (const [key, val] of Object.entries(data)) {
-            const img = document.createElement('img');
-            img.src = val.url;
-            img.alt = key;
-            img.onclick = () => {
-              document.getElementById('modalImage').src = val.url;
-              document.getElementById('modal').classList.add('active');
+        function initCharts() {
+            const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+            temperatureChart = new Chart(tempCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Internal',
+                            data: [],
+                            borderColor: '#46db7d',
+                            backgroundColor: 'rgba(70, 219, 125, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'External',
+                            data: [],
+                            borderColor: '#3296ff',
+                            backgroundColor: 'rgba(50, 150, 255, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: getChartOptions('°C')
+            });
+
+            const humidityCtx = document.getElementById('humidityChart').getContext('2d');
+            humidityChart = new Chart(humidityCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Internal',
+                            data: [],
+                            borderColor: '#46db7d',
+                            backgroundColor: 'rgba(70, 219, 125, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'External',
+                            data: [],
+                            borderColor: '#3296ff',
+                            backgroundColor: 'rgba(50, 150, 255, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: getChartOptions('%')
+            });
+        }
+
+        function getChartOptions(unit) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 16,
+                            usePointStyle: true,
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + unit;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 0,
+                            autoSkipPadding: 20
+                        }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        radius: 0,
+                        hoverRadius: 4
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
             };
-            container.appendChild(img);
-          }
-        });
-    }
+        }
 
-    setInterval(() => {
-      updateTime();
-      updateSensors();
-    }, 5000);
+        function setupEventListeners() {
+            // Temperature chart controls
+            document.querySelectorAll('#temperatureChart').closest('.chart-container').querySelectorAll('.time-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.closest('.chart-controls').querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentTempRange = this.dataset.range;
+                    updateChartData('temperature');
+                });
+            });
 
-    updateTime();
-    updateSensors();
-    loadImages();
-  </script>
+            // Humidity chart controls
+            document.querySelectorAll('#humidityChart').closest('.chart-container').querySelectorAll('.time-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.closest('.chart-controls').querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentHumidityRange = this.dataset.range;
+                    updateChartData('humidity');
+                });
+            });
+        }
+
+        function fetchData() {
+            // Fetch internal data
+            fetch('/api/latest_sensor_data')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error) updateInternalData(data);
+                })
+                .catch(console.error);
+
+            // Fetch external weather
+            fetch('http://api.weatherapi.com/v1/current.json?key=39551701ec73445590294530241807&q=cuncolim&aqi=no')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.current) updateExternalData(data);
+                })
+                .catch(console.error);
+
+            // Fetch camera images
+            fetch('/api/latest_images')
+                .then(response => response.json())
+                .then(updateCameraFeeds)
+                .catch(console.error);
+
+            // Fetch recent data
+            fetch('/api/sensor_data?limit=10')
+                .then(response => response.json())
+                .then(updateRecentData)
+                .catch(console.error);
+
+            updateLastUpdated();
+        }
+
+        function updateInternalData(data) {
+            const temp = data.temperature;
+            const humidity = data.humidity;
+            const time = new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            document.getElementById('internalTemp').textContent = temp?.toFixed(1) || '--';
+            document.getElementById('internalTempTime').textContent = time;
+            document.getElementById('internalHumidity').textContent = humidity?.toFixed(1) || '--';
+            document.getElementById('internalHumidityTime').textContent = time;
+
+            updateTrend('internalTemp', temp, '°C');
+            updateTrend('internalHumidity', humidity, '%');
+            previousInternalTemp = temp;
+            previousInternalHumidity = humidity;
+        }
+
+        function updateExternalData(data) {
+            const temp = data.current.temp_c;
+            const humidity = data.current.humidity;
+            const time = new Date(data.current.last_updated).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            document.getElementById('externalTemp').textContent = temp?.toFixed(1) || '--';
+            document.getElementById('externalTempTime').textContent = time;
+            document.getElementById('externalHumidity').textContent = humidity?.toFixed(1) || '--';
+            document.getElementById('externalHumidityTime').textContent = time;
+
+            updateTrend('externalTemp', temp, '°C');
+            updateTrend('externalHumidity', humidity, '%');
+            previousExternalTemp = temp;
+            previousExternalHumidity = humidity;
+        }
+
+        function updateTrend(element, currentValue, unit) {
+            if (!currentValue) return;
+
+            const trendEl = document.getElementById(element + 'Trend');
+            const changeEl = document.getElementById(element + 'Change');
+            const previousValue = element.includes('Temp') ? 
+                (element.includes('internal') ? previousInternalTemp : previousExternalTemp) :
+                (element.includes('internal') ? previousInternalHumidity : previousExternalHumidity);
+
+            if (previousValue !== null) {
+                const change = currentValue - previousValue;
+                const changeAbs = Math.abs(change).toFixed(1);
+
+                if (change > 0.1) {
+                    trendEl.className = 'trend up';
+                    changeEl.textContent = `+${changeAbs}${unit}`;
+                } else if (change < -0.1) {
+                    trendEl.className = 'trend down';
+                    changeEl.textContent = `-${changeAbs}${unit}`;
+                } else {
+                    trendEl.className = 'trend neutral';
+                    changeEl.textContent = `0.0${unit}`;
+                }
+            }
+        }
+
+        function updateCameraFeeds(data) {
+            const container = document.getElementById('cameraFeeds');
+            if (!data || Object.keys(data).length === 0) {
+                container.innerHTML = '<div class="camera-card"><div class="camera-info">No camera feeds available</div></div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            Object.entries(data).forEach(([cameraId, feed]) => {
+                const time = new Date(feed.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const card = document.createElement('div');
+                card.className = 'camera-card';
+                card.innerHTML = `
+                    <img src="${feed.url}" class="camera-image" onerror="this.src='https://via.placeholder.com/300x160?text=Camera+Offline'">
+                    <div class="camera-info">
+                        <div class="camera-title">${cameraId.replace('_', ' ')}</div>
+                        <div class="camera-time">${time}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function updateRecentData(data) {
+            const table = document.getElementById('sensorDataTable');
+            if (!data || data.length === 0) {
+                table.innerHTML = '<tr><td colspan="4">No data available</td></tr>';
+                return;
+            }
+
+            table.innerHTML = '';
+            data.forEach(row => {
+                const time = new Date(row.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${time}</td>
+                    <td>${row.temperature?.toFixed(1) || '--'}</td>
+                    <td>${row.humidity?.toFixed(1) || '--'}</td>
+                    <td>${row.pressure?.toFixed(0) || '--'}</td>
+                `;
+                table.appendChild(tr);
+            });
+        }
+
+        function updateChartData(type) {
+            const chart = type === 'temperature' ? temperatureChart : humidityChart;
+            const range = type === 'temperature' ? currentTempRange : currentHumidityRange;
+            let hours = 1;
+            
+            switch(range) {
+                case '1h': hours = 1; break;
+                case '24h': hours = 24; break;
+                case '7d': hours = 168; break;
+            }
+            
+            // Generate labels
+            const labels = [];
+            const now = new Date();
+            for (let i = hours; i >= 0; i--) {
+                const time = new Date(now.getTime() - i * 60 * 60 * 1000 / hours);
+                labels.push(time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+            }
+            
+            // Generate sample data
+            const internalData = [];
+            const externalData = [];
+            let lastInternal = type === 'temperature' ? 
+                (previousInternalTemp || 25) : 
+                (previousInternalHumidity || 60);
+            let lastExternal = type === 'temperature' ? 
+                (previousExternalTemp || 28) : 
+                (previousExternalHumidity || 65);
+            
+            for (let i = 0; i <= hours; i++) {
+                lastInternal += (Math.random() - 0.5) * (type === 'temperature' ? 0.3 : 0.8);
+                internalData.push(lastInternal);
+                
+                lastExternal += (Math.random() - 0.5) * (type === 'temperature' ? 0.5 : 1.5);
+                externalData.push(lastExternal);
+            }
+            
+            // Update chart
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = internalData;
+            chart.data.datasets[1].data = externalData;
+            chart.update();
+        }
+
+        function updateLastUpdated() {
+            document.getElementById('lastUpdated').textContent = 
+                `Last updated: ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}`;
+        }
+
+        // Helper for closest() polyfill
+        Element.prototype.closest = Element.prototype.closest || function(selector) {
+            let el = this;
+            while (el) {
+                if (el.matches(selector)) return el;
+                el = el.parentElement;
+            }
+            return null;
+        };
+    </script>
 </body>
 </html>
